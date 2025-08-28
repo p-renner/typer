@@ -13,6 +13,10 @@ import (
 var quotes quote.Quotes
 
 func main() {
+	if !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stdout.Fd())) {
+		log.Fatal("Not running in a terminal")
+	}
+
 	if err := initQuotes("quotes.json"); err != nil {
 		log.Fatal(err)
 	}
