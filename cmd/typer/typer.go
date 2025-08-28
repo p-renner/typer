@@ -63,7 +63,7 @@ func typer() error {
 		// TODO: if the quote is very long, the line will wrap and the clearing
 		// will not work correctly. Might just clear the whole screen instead.
 		clearLine()
-		str := colorMatching(quote.Quote, input)
+		str := colorize(input, quote.Quote)
 		fmt.Fprint(t, str)
 
 		if input == quote.Quote {
@@ -78,7 +78,7 @@ func typer() error {
 	return nil
 }
 
-func colorMatching(quote, input string) string {
+func colorize(input, quote string) string {
 	result := ""
 
 	for i := 0; i < len(input) && i < len(quote); i++ {
