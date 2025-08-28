@@ -1,0 +1,139 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"typer/quote"
+
+	"golang.org/x/term"
+)
+
+var quotes quote.Quotes
+
+func main() {
+	if err := initQuotes("quotes.json"); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := typer(); err != nil {
+		log.Fatal("Error:", err.Error())
+	}
+}
+
+func initQuotes(path string) error {
+	err := quotes.Load(path)
+
+	if err != nil {
+		return err
+	}
+
+	if quotes.Count() == 0 {
+		return fmt.Errorf("no quotes found in %s", path)
+	}
+
+	return nil
+}
+
+const (
+	CTRL_C = 3
+	ESC    = 27
+	BS     = 127
+)
+
+func typer() error {
+	quote, err := quotes.GetRandom()
+
+	t := term.NewTerminal(os.Stdin, "")
+	input := ""
+	fmt.Fprint(t, quote.Quote)
+
+	for {
+		input, err = loop(input)
+
+		if err != nil && err.Error() == "exiting" {
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+
+		clearLine()
+		str := colorMatching(quote.Quote, input)
+		fmt.Fprint(t, str)
+
+		if input == quote.Quote {
+			break
+		}
+	}
+
+	if input == quote.Quote {
+		fmt.Fprintf(t, "\nWell done!")
+	}
+
+	return nil
+}
+
+func colorMatching(quote, input string) string {
+	result := ""
+
+	for i := 0; i < len(input) && i < len(quote); i++ {
+		if input[i] == quote[i] {
+			result += fmt.Sprintf("\033[32m%c\033[0m", input[i]) // Green
+		} else {
+			result += fmt.Sprintf("\033[31m%c\033[0m", quote[i]) // Red
+		}
+	}
+
+	if len(input) < len(quote) {
+		result += quote[len(input):]
+	}
+
+	return result
+}
+
+func loop(input string) (string, error) {
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+
+	if err != nil {
+		return "", err
+	}
+
+	key, err := readKeypress()
+
+	if err != nil {
+		return "", err
+	}
+
+	if key == CTRL_C || key == ESC {
+		return input, fmt.Errorf("exiting")
+	}
+
+	if key == BS && len(input) > 0 {
+		return input[:len(input)-1], nil
+	}
+
+	return input + string(key), nil
+}
+
+func clearLine() {
+	fmt.Print("\r\033[K")
+}
+
+func readKeypress() (byte, error) {
+	b := make([]byte, 1)
+	n, err := os.Stdin.Read(b)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if n == 0 {
+		return 0, fmt.Errorf("no input read")
+	}
+
+	return b[0], nil
+}
