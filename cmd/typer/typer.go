@@ -60,6 +60,8 @@ func typer() error {
 			return err
 		}
 
+		// TODO: if the quote is very long, the line will wrap and the clearing
+		// will not work correctly. Might just clear the whole screen instead.
 		clearLine()
 		str := colorMatching(quote.Quote, input)
 		fmt.Fprint(t, str)
