@@ -113,11 +113,12 @@ func correctUpTo(input, quote string) int {
 
 func loop(input string) (string, error) {
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
 	if err != nil {
 		return "", err
 	}
+
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
 	key, err := readKeypress()
 
