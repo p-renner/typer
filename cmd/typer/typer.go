@@ -80,13 +80,14 @@ func typer() error {
 
 func colorize(input, quote string) string {
 	result := ""
+	correctLen := correctUpTo(input, quote)
 
-	for i := 0; i < len(input) && i < len(quote); i++ {
-		if input[i] == quote[i] {
-			result += fmt.Sprintf("\033[32m%c\033[0m", input[i]) // Green
-		} else {
-			result += fmt.Sprintf("\033[31m%c\033[0m", quote[i]) // Red
-		}
+	if correctLen > 0 {
+		result += fmt.Sprintf("\033[32m%s\033[0m", input[:correctLen]) // Green
+	}
+
+	if correctLen < len(quote) {
+		result += fmt.Sprintf("\033[31m%s\033[0m", quote[correctLen:len(input)]) // Red
 	}
 
 	if len(input) < len(quote) {
@@ -94,6 +95,20 @@ func colorize(input, quote string) string {
 	}
 
 	return result
+}
+
+func correctUpTo(input, quote string) int {
+	correctLen := 0
+
+	for i := 0; i < len(input) && i < len(quote); i++ {
+		if input[i] != quote[i] {
+			break
+		}
+
+		correctLen++
+	}
+
+	return correctLen
 }
 
 func loop(input string) (string, error) {
