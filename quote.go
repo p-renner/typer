@@ -5,11 +5,13 @@ import (
 	"io/fs"
 	"math/rand/v2"
 	"os"
+	"time"
 )
 
 type Quote struct {
-	Quote  string `json:"quote"`
-	Author string `json:"author"`
+	Quote     string        `json:"quote"`
+	Author    string        `json:"author"`
+	Highscore time.Duration `json:"highscore,omitempty"`
 }
 
 type Quotes []Quote

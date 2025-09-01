@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"typer/quote"
 
@@ -48,6 +49,30 @@ const (
 
 func typer() error {
 	quote, err := quotes.GetRandom()
+
+	start := time.Now()
+
+	defer func() {
+		elapsed := time.Since(start)
+
+		fmt.Printf("\nYou took: %s\n", elapsed.Truncate(time.Second))
+
+		if quote.Highscore == 0 {
+			fmt.Printf("This was your first time, setting highscore to: %s\n", elapsed.Truncate(time.Second))
+			quote.Highscore = elapsed
+			quotes.Save("quotes.json")
+			return
+		}
+
+		if elapsed > quote.Highscore {
+			fmt.Printf("Your best time is: %s\n", quote.Highscore.Truncate(time.Second))
+			return
+		}
+
+		fmt.Printf("\nNew highscore! Previous best was: %s", quote.Highscore.Truncate(time.Second))
+		quote.Highscore = elapsed
+		quotes.Save("quotes.json")
+	}()
 
 	t := term.NewTerminal(os.Stdin, "")
 	input := ""
