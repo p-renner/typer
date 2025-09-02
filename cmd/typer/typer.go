@@ -14,11 +14,13 @@ import (
 var quotes quote.Quotes
 
 func main() {
+	Init()
+
 	if !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stdout.Fd())) {
 		log.Fatal("Not running in a terminal")
 	}
 
-	if err := initQuotes("quotes.json"); err != nil {
+	if err := initQuotes(*quotesFile); err != nil {
 		log.Fatal(err)
 	}
 
@@ -48,30 +50,37 @@ const (
 )
 
 func typer() error {
-	quote, err := quotes.GetRandom()
+	var err error
+	var quote *quote.Quote
+
+	if *QuoteID >= 0 {
+		quote, err = quotes.GetByID(*QuoteID)
+	} else {
+		quote, err = quotes.GetRandom()
+	}
 
 	start := time.Now()
 
 	defer func() {
 		elapsed := time.Since(start)
 
-		fmt.Printf("\nYou took: %s\n", elapsed.Truncate(time.Second))
+		fmt.Printf("\nYou took: %s\n", elapsed.Truncate(time.Millisecond))
 
 		if quote.Highscore == 0 {
-			fmt.Printf("This was your first time, setting highscore to: %s\n", elapsed.Truncate(time.Second))
+			fmt.Printf("This was your first time, setting highscore to: %s\n", elapsed.Truncate(time.Millisecond))
 			quote.Highscore = elapsed
-			quotes.Save("quotes.json")
+			quotes.Save(*quotesFile)
 			return
 		}
 
 		if elapsed > quote.Highscore {
-			fmt.Printf("Your best time is: %s\n", quote.Highscore.Truncate(time.Second))
+			fmt.Printf("Your best time is: %s\n", quote.Highscore.Truncate(time.Millisecond))
 			return
 		}
 
-		fmt.Printf("\nNew highscore! Previous best was: %s", quote.Highscore.Truncate(time.Second))
+		fmt.Printf("\nNew highscore! Previous best was: %s", quote.Highscore.Truncate(time.Millisecond))
 		quote.Highscore = elapsed
-		quotes.Save("quotes.json")
+		quotes.Save(*quotesFile)
 	}()
 
 	t := term.NewTerminal(os.Stdin, "")
@@ -81,6 +90,7 @@ func typer() error {
 	for {
 		input, err = loop(input)
 
+		// User requested exit
 		if err != nil && err.Error() == "exiting" {
 			return nil
 		}
