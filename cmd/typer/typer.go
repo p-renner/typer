@@ -62,6 +62,10 @@ func typer() error {
 	start := time.Now()
 
 	defer func() {
+		if err != nil {
+			return
+		}
+
 		elapsed := time.Since(start)
 
 		fmt.Printf("\nYou took: %s\n", elapsed.Truncate(time.Millisecond))
