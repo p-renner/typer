@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"typer/quote"
@@ -126,11 +127,13 @@ func colorize(input, quote string) string {
 	correctLen := correctUpTo(input, quote)
 
 	if correctLen > 0 {
-		result += fmt.Sprintf("\033[32m%s\033[0m", input[:correctLen]) // Green
+		tmp := strings.ReplaceAll(input[:correctLen], " ", "·")
+		result += fmt.Sprintf("\033[32m%s\033[0m", tmp) // Green
 	}
 
 	if correctLen < len(quote) {
-		result += fmt.Sprintf("\033[31m%s\033[0m", quote[correctLen:len(input)]) // Red
+		tmp := strings.ReplaceAll(quote[correctLen:len(input)], " ", "·")
+		result += fmt.Sprintf("\033[31m%s\033[0m", tmp) // Red
 	}
 
 	if len(input) < len(quote) {
