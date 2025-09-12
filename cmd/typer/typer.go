@@ -12,36 +12,16 @@ import (
 	"golang.org/x/term"
 )
 
-var quotes quote.Quotes
-
 func main() {
-	Init()
+	quotes := Init()
 
 	if !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stdout.Fd())) {
 		log.Fatal("Not running in a terminal")
 	}
 
-	if err := initQuotes(*quotesFile); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := typer(); err != nil {
+	if err := typer(quotes); err != nil {
 		log.Fatal("Error:", err.Error())
 	}
-}
-
-func initQuotes(path string) error {
-	err := quotes.Load(path)
-
-	if err != nil {
-		return err
-	}
-
-	if quotes.Count() == 0 {
-		return fmt.Errorf("no quotes found in %s", path)
-	}
-
-	return nil
 }
 
 const (
@@ -50,7 +30,7 @@ const (
 	BS     = 127
 )
 
-func typer() error {
+func typer(quotes quote.Quotes) error {
 	var err error
 	var quote *quote.Quote
 
@@ -62,38 +42,12 @@ func typer() error {
 
 	start := time.Now()
 
-	defer func() {
-		if err != nil {
-			return
-		}
-
-		elapsed := time.Since(start)
-
-		fmt.Printf("\nYou took: %s\n", elapsed.Truncate(time.Millisecond))
-
-		if quote.Highscore == 0 {
-			fmt.Printf("This was your first time, setting highscore to: %s\n", elapsed.Truncate(time.Millisecond))
-			quote.Highscore = elapsed
-			quotes.Save(*quotesFile)
-			return
-		}
-
-		if elapsed > quote.Highscore {
-			fmt.Printf("Your best time is: %s\n", quote.Highscore.Truncate(time.Millisecond))
-			return
-		}
-
-		fmt.Printf("\nNew highscore! Previous best was: %s", quote.Highscore.Truncate(time.Millisecond))
-		quote.Highscore = elapsed
-		quotes.Save(*quotesFile)
-	}()
-
 	t := term.NewTerminal(os.Stdin, "")
 	input := ""
 	fmt.Fprint(t, quote.Quote)
 
 	for {
-		input, err = loop(input)
+		input, err = readInput(input)
 
 		// User requested exit
 		if err != nil && err.Error() == "exiting" {
@@ -117,6 +71,7 @@ func typer() error {
 
 	if input == quote.Quote {
 		fmt.Fprintf(t, "\nWell done!")
+		calculateScore(start, quote, quotes)
 	}
 
 	return nil
@@ -157,7 +112,7 @@ func correctUpTo(input, quote string) int {
 	return correctLen
 }
 
-func loop(input string) (string, error) {
+func readInput(input string) (string, error) {
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 
 	if err != nil {
@@ -200,4 +155,26 @@ func readKeypress() (byte, error) {
 	}
 
 	return b[0], nil
+}
+
+func calculateScore(start time.Time, quote *quote.Quote, quotes quote.Quotes) {
+	elapsed := time.Since(start)
+
+	fmt.Printf("\nYou took: %s\n", elapsed.Truncate(time.Millisecond))
+
+	if quote.Highscore == 0 {
+		fmt.Printf("This was your first time, setting highscore to: %s\n", elapsed.Truncate(time.Millisecond))
+		quote.Highscore = elapsed
+		quotes.Save(*quotesFile)
+		return
+	}
+
+	if elapsed > quote.Highscore {
+		fmt.Printf("Your best time is: %s\n", quote.Highscore.Truncate(time.Millisecond))
+		return
+	}
+
+	fmt.Printf("\nNew highscore! Previous best was: %s", quote.Highscore.Truncate(time.Millisecond))
+	quote.Highscore = elapsed
+	quotes.Save(*quotesFile)
 }
